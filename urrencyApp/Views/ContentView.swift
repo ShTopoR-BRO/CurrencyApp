@@ -2,12 +2,18 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var viewModel = CurrencyViewModel()
+    @AppStorage("isDarkMode") private var isDarkMode = false
     
     var body: some View {
         NavigationView {
             ZStack {
+                // Фон с поддержкой темы
+                Color(UIColor.systemBackground)
+                    .ignoresSafeArea()
+                
                 if viewModel.isLoading && viewModel.currencies.isEmpty {
                     ProgressView("Загрузка курсов валют...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: .accentColor))
                 } else if let error = viewModel.errorMessage, viewModel.currencies.isEmpty {
                     VStack(spacing: 20) {
                         Image(systemName: "exclamationmark.triangle")
@@ -15,31 +21,51 @@ struct ContentView: View {
                             .foregroundColor(.orange)
                         Text("Ошибка загрузки")
                             .font(.headline)
+                            .foregroundColor(.primary)
                         Text(error)
                             .font(.caption)
                             .multilineTextAlignment(.center)
+                            .foregroundColor(.secondary)
                             .padding(.horizontal)
                         Button("Повторить") {
                             viewModel.refresh()
                         }
                         .buttonStyle(.borderedProminent)
+                        .tint(.accentColor)
                     }
+                    .padding()
                 } else {
                     List(viewModel.currencies) { currency in
                         CurrencyRow(currency: currency)
+                            .listRowBackground(Color(UIColor.secondarySystemBackground))
                     }
+                    .scrollContentBackground(.hidden)
                     .refreshable {
                         viewModel.refresh()
                     }
                 }
             }
             .navigationTitle("Курсы валют ЦБ РФ")
+            .toolbarBackground(Color(UIColor.systemBackground), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
+                // Кнопка переключения темы
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        isDarkMode.toggle()
+                    }) {
+                        Image(systemName: isDarkMode ? "sun.max.fill" : "moon.fill")
+                            .foregroundColor(.accentColor)
+                    }
+                }
+                
+                // Кнопка обновления
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         viewModel.refresh()
                     }) {
                         Image(systemName: "arrow.clockwise")
+                            .foregroundColor(.accentColor)
                     }
                     .disabled(viewModel.isLoading)
                 }
@@ -50,9 +76,16 @@ struct ContentView: View {
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .padding(.bottom, 5)
+                        .padding(.horizontal)
+                        .background(
+                            Color(UIColor.systemBackground)
+                                .opacity(0.9)
+                                .cornerRadius(8)
+                        )
                 }
             }
         }
+        .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 }
 
@@ -83,6 +116,7 @@ struct CurrencyRow: View {
                 Text("\(currency.value, specifier: "%.4f") ₽")
                     .font(.title3)
                     .fontWeight(.medium)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
